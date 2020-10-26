@@ -25,5 +25,5 @@ plt.xlabel('N')
 plt.xlim(xmin=0, xmax=1000)
 plt.ylabel('Return')
 
-plt.show()
 plt.savefig('sum_hel_check.png')
+plt.show()
