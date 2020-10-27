@@ -51,7 +51,7 @@ def sampleProb(Q, rho, M):
     for j in range(Q.shape[1]):
         while sum(prob[0:Q.shape[0]-1, j]) > 1:
             for i in range(Q.shape[0]-1):
-                delta = min(2*Q[i, j], 2*np.sqrt(rho[j]*Q[i, j]/M))
+                delta = min(0.5*Q[i, j], 0.5*np.sqrt(rho[j]*Q[i, j]/M))
                 prob[i][j] = np.random.normal(Q[i, j], delta)
         prob[Q.shape[0]-1, j] = 1 - sum(prob[0:Q.shape[0]-1, j])
 

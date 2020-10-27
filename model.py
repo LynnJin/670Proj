@@ -25,7 +25,7 @@ def robustModel(c, v, s, l, Q, budget, demand, rho, objType, phiType):
     if objType == "sum":
         m.setObjective(quicksum(z[j] for j in range(numItem)), sense=GRB.MAXIMIZE)
     elif objType == "worst":
-        min_z = m.addVar(vtype=GRB.CONTINUOUS, name="worstReturn")
+        min_z = m.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="worstReturn")
         m.addGenConstrMin(min_z, z)
         m.setObjective(min_z, sense=GRB.MAXIMIZE)
     else:
@@ -99,7 +99,7 @@ def detModel(c, v, s, l, Q, budget, demand, objType):
     if objType == "sum":
         m.setObjective(quicksum(z[j] for j in range(numItem)), sense=GRB.MAXIMIZE)
     elif objType == "worst":
-        min_z = m.addVar(vtype=GRB.CONTINUOUS, name="worstReturn")
+        min_z = m.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="worstReturn")
         m.addGenConstrMin(min_z, z)
         m.setObjective(min_z, sense=GRB.MAXIMIZE)
     else:
