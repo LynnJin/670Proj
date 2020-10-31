@@ -17,7 +17,7 @@ def robustModel(c, v, s, l, Q, budget, demand, rho, objType, phiType):
     # dual decision variables
     lam = m.addVars(numItem, vtype=GRB.CONTINUOUS, name="lambda")
     eta = m.addVars(numItem, vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="eta")
-    y = m.addVars(numDemand, numItem, vtype=GRB.CONTINUOUS, name="y")
+    y = m.addVars(numDemand, numItem, vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="y")
     if phiType == "m-chi":
         w = m.addVars(numDemand, numItem, vtype=GRB.CONTINUOUS, name="w")
 
@@ -58,24 +58,23 @@ def robustModel(c, v, s, l, Q, budget, demand, rho, objType, phiType):
         for i in range(numDemand):
             # calculate expression in conjugate term
             con = LinExpr(-f[i, j] - eta[j])
+            con1 = m.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="con1" + str(i) + str(j))
+            con2 = m.addVar(vtype=GRB.CONTINUOUS, name="con2" + str(i) + str(j))
             if phiType == "chi":
                 m.addConstr(con <= lam[j], name="conjugate_"+str(i)+str(j))
-                con1 = m.addVar(vtype=GRB.CONTINUOUS, name="con1" + str(i) + str(j))
-                con2 = m.addVar(vtype=GRB.CONTINUOUS, name="con2" + str(i) + str(j))
                 m.addConstr(con1 == 0.5 * con)
                 m.addConstr(con2 == 0.5 * (2*lam[j] - con))
                 m.addQConstr(y[i, j]*y[i, j] + con1*con1 <= con2*con2, name="soc_"+str(i)+str(j))
             elif phiType == "hel":
                 m.addConstr(con <= lam[j], name="conjugate_"+str(i)+str(j))
-                con1 = m.addVar(vtype=GRB.CONTINUOUS, name="con1"+str(i)+str(j))
-                con2 = m.addVar(vtype=GRB.CONTINUOUS, name="con2"+str(i)+str(j))
                 m.addConstr(con1 == 0.5*(y[i, j] - lam[j] + con))
                 m.addConstr(con2 == 0.5*(y[i, j] + lam[j] - con))
                 m.addQConstr(lam[j]*lam[j] + con1*con1 <= con2*con2, name="soc_"+str(i)+str(j))
             elif phiType == "m-chi":
                 m.addConstr(con + 2*lam[j] <= w[i, j], name="conjugate_"+str(i)+str(j))
-                m.addQConstr(w[i, j]*w[i, j] + (0.5*(lam[j] - y[i, j]))*(0.5*(lam[j] - y[i, j])) <=
-                             (0.5*(lam[j] + y[i, j]))*(0.5*(lam[j] + y[i, j])), name="soc_"+str(i)+str(j))
+                m.addConstr(con1 == 0.5*(lam[j] - y[i, j]))
+                m.addConstr(con2 == 0.5*(lam[j] + y[i, j]))
+                m.addQConstr(w[i, j]*w[i, j] + con1*con1 <= con2*con2, name="soc_"+str(i)+str(j))
 
     #m.setParam(GRB.Param.NonConvex, 2)
     m.params.logtoconsole = 0

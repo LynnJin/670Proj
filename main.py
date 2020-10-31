@@ -1,4 +1,5 @@
 import data
+import model
 import evaluate
 import numpy as np
 
@@ -14,6 +15,7 @@ if __name__ == "__main__":
     numItem = Q.shape[1]
     phiType = "hel"
     objType = "worst"
+
 
     # return for different N
     detReturns = []
@@ -37,4 +39,4 @@ if __name__ == "__main__":
         if N % 50 == 0 and N >= 50:
             print(str(N/10) + " of " + str(N_max/10 - 1) + " experiments done")
 
-    np.savez_compressed(objType+'_'+phiType+'_'+'check1.npz', robust=robustReturns, det=detReturns)
+    np.savez_compressed(objType+'_'+phiType+'_'+'check2.npz', robust=robustReturns, det=detReturns)

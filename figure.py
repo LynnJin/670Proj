@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-loaded = np.load('worst_hel_check.npz')
+loaded = np.load('worst_hel_check2.npz')
 robustReturns = loaded['robust']
 detReturns = loaded['det']
 
@@ -21,9 +21,11 @@ plt.fill_between(list(range(10, 1001, 10)), detArray[0], detArray[1], color='r',
 
 plt.legend(loc="center right", prop={'size': 12})
 plt.xticks(list(range(0, 1001, 100)))
-plt.xlabel('N')
+plt.yticks(list(range(-10, 5, 2)))
 plt.xlim(xmin=0, xmax=1000)
+plt.ylim(ymin=-10, ymax=5)
+plt.xlabel('N')
 plt.ylabel('Return')
 
-plt.savefig('worst_hel_check.png')
+plt.savefig('worst_hel_check2.png')
 plt.show()
