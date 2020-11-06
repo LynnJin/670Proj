@@ -52,6 +52,8 @@ def robustModel(c, v, s, l, Q, budget, demand, rho, objType, phiType):
         elif phiType == "m-chi":
             m.addConstr(c[j] * q[j] + eta[j] + rho[j] * lam[j] - lam[j]
                         + 0.25*quicksum(y[i, j] * Q[i][j] for i in range(numDemand)) <= -z[j], name="robustified_"+str(j))
+        elif phiType == "cre":
+            m.addConstr(c[j] * q[j] + eta[j] + rho[j] * lam[j] - 2*lam[j] + 2*quicksum(y[i, j] * Q[i][j] for i in range(numDemand)) <= -z[j], name="robustified_"+str(j))
         else:
             raise Exception('Wrong phi type!')
 
@@ -75,6 +77,11 @@ def robustModel(c, v, s, l, Q, budget, demand, rho, objType, phiType):
                 m.addConstr(con1 == 0.5*(lam[j] - y[i, j]))
                 m.addConstr(con2 == 0.5*(lam[j] + y[i, j]))
                 m.addQConstr(w[i, j]*w[i, j] + con1*con1 <= con2*con2, name="soc_"+str(i)+str(j))
+            elif phiType == "cre":
+                m.addConstr(con <= 2*lam[j], name="conjugate_"+str(i)+str(j))
+                m.addConstr(con1 == 0.5*(y[i, j] - lam[j] + 0.5*con))
+                m.addConstr(con2 == 0.5*(y[i, j] + lam[j] - 0.5*con))
+                m.addQConstr(lam[j]*lam[j] + con1*con1 <= con2*con2, name="soc_"+str(i)+str(j))
 
     #m.setParam(GRB.Param.NonConvex, 2)
     m.params.logtoconsole = 0

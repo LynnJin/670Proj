@@ -13,9 +13,8 @@ if __name__ == "__main__":
     alpha = 0.05
     numDemand = Q.shape[0]
     numItem = Q.shape[1]
-    phiType = "hel"
-    objType = "worst"
-
+    phiType = "cre"
+    objType = "sum"
 
     # return for different N
     detReturns = []

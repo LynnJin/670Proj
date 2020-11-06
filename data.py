@@ -16,7 +16,7 @@ def read(fileName):
     return c, v, s, l, Q
 
 def rhoa(alpha, M, type, N):
-    phi_grad = {"chi": 2, "m-chi": 2, "hel": 0.5}
+    phi_grad = {"chi": 2, "m-chi": 2, "hel": 0.5, "cre": 1}
     grad = phi_grad.get(type)
 
     chi2_p = chi2.ppf(1 - alpha, M - 1)
@@ -27,7 +27,7 @@ def rhoa(alpha, M, type, N):
 
 
 def rhoc(alpha, M, type, N, p):
-    phi_grad = {'chi':[2, -6, 24], 'm-chi':[2, 0, 0], 'hel':[0.5, -0.75, 1.875]}
+    phi_grad = {'chi':[2, -6, 24], 'm-chi':[2, 0, 0], 'hel':[0.5, -0.75, 1.875], 'cre':[1, -1.5, 3.75]}
     S = sum([1/item for item in p])
     grad = phi_grad.get(type)
 
