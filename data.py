@@ -28,6 +28,11 @@ def rhoa(alpha, M, type, N):
 
 def rhoc(alpha, M, type, N, p):
     phi_grad = {'chi':[2, -6, 24], 'm-chi':[2, 0, 0], 'hel':[0.5, -0.75, 1.875], 'cre':[1, -1.5, 3.75]}
+    for item in p:
+        if item == 0:
+            rho = rhoa(alpha, M, type, N)
+            return rho
+
     S = sum([1/item for item in p])
     grad = phi_grad.get(type)
 
@@ -56,3 +61,36 @@ def sampleProb(Q, rho, M):
         prob[Q.shape[0]-1, j] = 1 - sum(prob[0:Q.shape[0]-1, j])
 
     return prob
+
+def sampleData(Q, N):
+    numItem = Q.shape[1]
+    numDemand = Q.shape[0]
+    probSim = np.zeros((numDemand, numItem))
+    for n in range(N):
+        s = np.random.uniform(0, 1, numItem)
+        for j in range(numItem):
+            if s[j] <= Q[0, j]:
+               probSim[0][j] += 1
+            elif s[j] <= Q[1, j] + Q[0, j]:
+                probSim[1][j] += 1
+            else:
+                probSim[2][j] += 1
+    probSim = np.array([[round(probSim[j][i]/N, 4) for i in range(numItem)] for j in range(numDemand)])
+
+    for j in range(numDemand):
+        if abs(sum(probSim[:, j]) - 1) <= 0.001:
+            probSim[2][j] = 1 - sum(probSim[0:2, j])
+        else:
+            raise Exception('Wrong simulation!')
+
+    return probSim
+
+def alphaSet(alpha):
+    alphaTest = []
+    for i in range(len(alpha)):
+        if i != len(alpha) - 1:
+            diff = (alpha[i + 1] - alpha[i]) / 45.0
+            alphaTest.extend(np.arange(alpha[i], alpha[i + 1], diff))
+    alphaTest.extend(np.arange(0.1, 0.401, 0.01))
+    alphaTest = np.round_(alphaTest, 6)
+    return alphaTest

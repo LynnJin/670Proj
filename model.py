@@ -96,7 +96,7 @@ def detModel(c, v, s, l, Q, budget, demand, objType):
 
     # creat decision variables
     # primal decision variables
-    q = m.addVars(numItem, vtype=GRB.CONTINUOUS, lb=0, name="Q")
+    q = m.addVars(numItem, vtype=GRB.CONTINUOUS, name="Q")
     z = m.addVars(numItem, vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="z")
     # artifical decision variables
     f = m.addVars(numDemand, numItem, vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="f")
@@ -117,6 +117,20 @@ def detModel(c, v, s, l, Q, budget, demand, objType):
         quicksum(c[j] * q[j] for j in range(numItem)) <= budget, name="budget")
     for j in range(numItem):
         # constraint in original objective function
+        '''
+        for i in range(numDemand):
+            a = m.addVar(vtype=GRB.CONTINUOUS, name="a")
+            m.addGenConstrMin(a, [q[j]], demand[i])
+            b = m.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="b")
+            m.addConstr(b == q[j] - demand[i])
+            d = m.addVar(vtype=GRB.CONTINUOUS, name="d")
+            m.addGenConstrMax(d, [b], 0.0)
+            e = m.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="e")
+            m.addConstr(e == demand[i] - q[j])
+            g = m.addVar(vtype=GRB.CONTINUOUS, name="g")
+            m.addGenConstrMax(g, [e], 0.0)
+            m.addConstr(f[i, j] == v[j] * a + s[j] * d - l[j] * g)
+        '''
         m.addConstrs((-f[i, j] >= -s[j]*q[j] + demand[i]*(s[j] - v[j]) for i in range(numDemand)),
                      name="unsoldCstr_"+str(j))
         m.addConstrs((-f[i, j] >= l[j]*demand[i] - (v[j] + l[j])*q[j] for i in range(numDemand)),
