@@ -60,11 +60,11 @@ def outSample():
     it = 1000
     numDemand = Q.shape[0]
     numItem = Q.shape[1]
-    phiType = "chi"
+    phiType = "m-chi"
     objType = "sum"
 
     # return for different N
-    SAAReturns = []
+    #SAAReturns = []
     robustReturns = []
     n = 0
 
@@ -81,9 +81,16 @@ def outSample():
 
         # evaluate the returns
         modelType = "robust"
-        minReturn, maxReturn, meanReturn, solution = evaluate.stat(c, v, s, l, Q, budget, demand, modelType, objType, phiType, it,
+        minReturn, maxReturn, meanReturn, solution, time = evaluate.stat(c, v, s, l, Q, budget, demand, modelType, objType, phiType, it,
                                                          rhoc, rhoTest, trueProb)
-        robustReturns.append([minReturn, maxReturn, meanReturn, solution])
+        robustReturns.append([minReturn, maxReturn, meanReturn, solution, time])
+
+        '''
+        modelType = "det"
+        minReturn, maxReturn, meanReturn, solution, time = evaluate.stat(c, v, s, l, Q, budget, demand, modelType, objType, phiType, it,
+                                                          rhoc, rhoTest, trueProb)
+        SAAReturns.append([minReturn, maxReturn, meanReturn, solution, time])
+        '''
 
         # print the process
         n = n + 1
@@ -91,50 +98,6 @@ def outSample():
             print(str(n) + " of " + str(167) + " experiments done")
 
     np.savez_compressed(objType + '_' + phiType + '_alpha_' + str(N)+'.npz', robust=robustReturns)
-
-def reliability():
-    # set parameter
-    c, v, s, l, trueProb = data.read("data.csv")
-    budget = 1000
-    demand = [4, 8, 10]
-    N = 50
-    Q = data.sampleData(trueProb, N)
-    alpha=[0.0001, 0.001, 0.01, 0.1]
-    alphaTest = data.alphaSet(alpha)
-
-    it = 1000
-    numDemand = Q.shape[0]
-    numItem = Q.shape[1]
-    phiType = "cre"
-    objType = "sum"
-
-    # return for different N
-    robustReturns = []
-    n = 0
-
-    rhoTest = []
-    for j in range(numItem):
-        rhoTest.append(data.rhoc(0.05, numDemand, phiType, N, Q[:, j]))
-
-    for alpha in alphaTest:
-        # calculate rho
-        rhoa = [data.rhoa(alpha, numDemand, phiType, N)] * numItem
-        rhoc = []
-        for j in range(numItem):
-            rhoc.append(data.rhoc(alpha, numDemand, phiType, N, Q[:, j]))
-
-        # evaluate the returns
-        modelType = "robust"
-        times = evaluate.relStat(c, v, s, l, Q, budget, demand, modelType, objType, phiType, it,
-                                                         rhoc, rhoTest, trueProb)
-        robustReturns.append(times)
-
-        # print the process
-        n = n + 1
-        if n % 10 == 0 and n >= 10:
-            print(str(n) + " of " + str(167) + " experiments done")
-
-    np.savez_compressed(objType + '_' + phiType + '_' + 'rel.npz', robust=robustReturns)
 
 if __name__ == "__main__":
     outSample()

@@ -44,44 +44,20 @@ def stat(c, v, s, l, Q, budget, demand, modelType, objType, phiType, it, rho=0, 
     if len(trueProb):
         Q = trueProb
     results = []
-
+    times = 0
     for t in range(it):
         # sample probability
         prob = data.sampleProb(Q, rhoTest, numDemand)
         # evaluate the obj
-        results.append(objVal(c, v, s, l, prob, order, demand, objType))
+        simObj = objVal(c, v, s, l, prob, order, demand, objType)
+        results.append(simObj)
+
+        if simObj >= m.objVal:
+            times = times + 1
 
     # calculate the mean and range
     minReturn = min(results)
     maxReturn = max(results)
     meanReturn = sum(results) / len(results)
 
-    return minReturn, maxReturn, meanReturn, m.objVal
-
-def relStat(c, v, s, l, Q, budget, demand, modelType, objType, phiType, it, rho=0, rhoTest=0, trueProb = []):
-    numDemand = Q.shape[0]
-    numItem = Q.shape[1]
-    # solve robust model and get the optimal solutions
-    if modelType == "robust":
-        m = model.robustModel(c, v, s, l, Q, budget, demand, rho, objType, phiType)
-    elif modelType == "det":
-        m = model.detModel(c, v, s, l, Q, budget, demand, objType)
-    else:
-        raise Exception('Wrong model type!')
-
-    m.optimize()
-    order = [m.getVarByName("Q[" + str(j) + "]").getAttr("x") for j in range(numItem)]
-    result = m.objVal
-    # evaluate the return
-    if len(trueProb):
-        Q = trueProb
-    times = 0
-    for t in range(it):
-        # sample probability
-        prob = data.sampleProb(Q, rhoTest, numDemand)
-        # evaluate the obj
-        pra = objVal(c, v, s, l, prob, order, demand, objType)
-        if pra >= result:
-            times = times + 1
-
-    return round(times/it, 4)
+    return minReturn, maxReturn, meanReturn, m.objVal, times/it
