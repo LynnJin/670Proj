@@ -86,11 +86,11 @@ def sampleData(Q, N):
 
     return probSim
 
-def alphaSet(alpha):
+def alphaSet(alpha, piece = 5):
     alphaTest = []
     for i in range(len(alpha)):
         if i != len(alpha) - 1:
-            diff = (alpha[i + 1] - alpha[i]) / 45.0
+            diff = (alpha[i + 1] - alpha[i]) / 9.0*piece
             alphaTest.extend(np.arange(alpha[i], alpha[i + 1], diff))
     alphaTest.extend(np.arange(0.1, 0.401, 0.01))
     alphaTest = np.round_(alphaTest, 6)

@@ -3,9 +3,11 @@ import data
 import matplotlib.pyplot as plt
 
 def sanityCheck():
-    loaded = np.load('sum_cre_alpha.npz')
+    phiType = "cre"
+    objType = "worst"
+    loaded = np.load(objType + '_' + phiType + '_final.npz')
     robustReturns = loaded['robust']
-    detReturns = loaded['det']
+    detReturns = loaded['SAA']
 
     robArray = np.transpose(np.array(robustReturns))
     detArray = np.transpose(np.array(detReturns))
@@ -19,13 +21,13 @@ def sanityCheck():
 
     plt.legend(loc="lower right", prop={'size': 12})
     plt.xticks(list(range(0, 1001, 100)))
-    plt.yticks(list(range(80, 181, 20)))
+    plt.yticks(list(range(-15, 9, 2)))
     plt.xlim(xmin=0, xmax=1000)
-    plt.ylim(ymin=80, ymax=180)
+    plt.ylim(ymin=-15, ymax=9)
     plt.xlabel('N')
     plt.ylabel('Return')
 
-    plt.savefig('sum_cre_check3.png')
+    plt.savefig(objType + '_' + phiType + '_final.png')
     plt.show()
 
 def outSample():
@@ -110,4 +112,4 @@ def rel():
     plt.show()
 
 #outSample()
-rel()
+sanityCheck()

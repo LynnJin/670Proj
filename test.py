@@ -1,9 +1,11 @@
 import data
 
-c, v, s, l, Q = data.read("data.csv")
-
-alpha = [0.0001, 0.001, 0.01, 0.1]
-alphaTest = data.alphaSet(alpha)
-
-print(alphaTest)
-print(len(alphaTest))
+c, v, s, l, trueProb = data.read("data.csv")
+length = int(10 / 2)
+allProb = []
+for k in range(5):
+    allProb.append(data.sampleData(trueProb, length))
+for k in range(5):
+    testProb = allProb[k]
+    trainProb = (sum(allProb) - allProb[k])/4
+    print(trainProb)
