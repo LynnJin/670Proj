@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from scipy.stats import chi2
 
+# read data from file
 def read(fileName):
     allData = pd.read_csv(fileName)
     #print(allData)
@@ -15,19 +16,20 @@ def read(fileName):
     Q = np.concatenate(([q1], [q2], [q3]), axis=0)
     return c, v, s, l, Q
 
+# calculate the approximated rho
 def rhoa(alpha, M, type, N):
     phi_grad = {"chi": 2, "m-chi": 2, "hel": 0.5, "cre": 1}
     grad = phi_grad.get(type)
 
     chi2_p = chi2.ppf(1 - alpha, M - 1)
-
     rho = chi2_p*grad/(2*N)
 
     return rho
 
-
+# calculate the corrected rho
 def rhoc(alpha, M, type, N, p):
-    phi_grad = {'chi':[2, -6, 24], 'm-chi':[2, 0, 0], 'hel':[0.5, -0.75, 1.875], 'cre':[1, -1.5, 3.75]}
+    # second - forth derivative of different types of divergence
+    phi_grad = {'chi':[2, -6, 24], 'm-chi': [2, 0, 0], 'hel': [0.5, -0.75, 1.875], 'cre': [1, -1.5, 3.75]}
     for item in p:
         if item == 0:
             rho = rhoa(alpha, M, type, N)
@@ -51,18 +53,20 @@ def rhoc(alpha, M, type, N, p):
 
     return rho
 
+# sample probability for testing
 def sampleProb(Q, rho, M):
     prob = np.ones((Q.shape[0], Q.shape[1]))
     for j in range(Q.shape[1]):
         while sum(prob[0:Q.shape[0]-1, j]) > 1:
             for i in range(Q.shape[0]-1):
-                #delta = 0.5 * Q[i, j]
+                # use the method in paper, take 95% confidence
                 delta = min(0.5*Q[i, j], 0.5*np.sqrt(rho[j]*Q[i, j]/M))
                 prob[i][j] = np.random.normal(Q[i, j], delta)
         prob[Q.shape[0]-1, j] = 1 - sum(prob[0:Q.shape[0]-1, j])
 
     return prob
 
+# sample data based on the true distribution, treat the sample data as training sample
 def sampleData(Q, N):
     numItem = Q.shape[1]
     numDemand = Q.shape[0]
@@ -78,6 +82,7 @@ def sampleData(Q, N):
                 probSim[2][j] += 1
     probSim = np.array([[round(probSim[j][i]/N, 4) for i in range(numItem)] for j in range(numDemand)])
 
+    # make sure the total probability is 1
     for j in range(numDemand):
         if abs(sum(probSim[:, j]) - 1) <= 0.001:
             probSim[2][j] = 1 - sum(probSim[0:2, j])
@@ -86,6 +91,7 @@ def sampleData(Q, N):
 
     return probSim
 
+# generate the list of alpha for testing, increase by 2% when alpha <= 0.1, 10% otherwise
 def alphaSet(alpha, piece = 5):
     alphaTest = []
     for i in range(len(alpha)):

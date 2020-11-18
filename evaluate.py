@@ -1,6 +1,7 @@
 import model
 import data
 
+# calculate the objective value given the sample probability of each demand
 def objVal(c, v, s, l, Q, order, demand, objType):
     numDemand = Q.shape[0]
     numItem = Q.shape[1]
@@ -27,10 +28,13 @@ def objVal(c, v, s, l, Q, order, demand, objType):
 
     return objVal
 
+# solve the optimization problem with the given distribution and rho
+# sample several distributions for testing
+# collect the out of sample results, find the mean, range and the times of result is lower than the optimal value
 def stat(c, v, s, l, Q, budget, demand, modelType, objType, phiType, it, rho=0, rhoTest=0, trueProb = []):
     numDemand = Q.shape[0]
     numItem = Q.shape[1]
-    # solve robust model and get the optimal solutions
+    # solve optimization problem
     if modelType == "robust":
         m = model.robustModel(c, v, s, l, Q, budget, demand, rho, objType, phiType)
     elif modelType == "det":
@@ -39,6 +43,7 @@ def stat(c, v, s, l, Q, budget, demand, modelType, objType, phiType, it, rho=0, 
         raise Exception('Wrong model type!')
 
     m.optimize()
+    # get the optimal solutions
     order = [m.getVarByName("Q[" + str(j) + "]").getAttr("x") for j in range(numItem)]
     # evaluate the return
     if len(trueProb):
@@ -51,7 +56,7 @@ def stat(c, v, s, l, Q, budget, demand, modelType, objType, phiType, it, rho=0, 
         # evaluate the obj
         simObj = objVal(c, v, s, l, prob, order, demand, objType)
         results.append(simObj)
-
+        # collect the times of result is lower than the optimal value
         if simObj >= m.objVal:
             times = times + 1
 

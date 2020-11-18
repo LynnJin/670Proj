@@ -2,6 +2,7 @@ import numpy as np
 import data
 import matplotlib.pyplot as plt
 
+# draw the figure of the results for different N
 def sanityCheck():
     phiType = "cre"
     objType = "worst"
@@ -30,6 +31,7 @@ def sanityCheck():
     plt.savefig(objType + '_' + phiType + '_final.png')
     plt.show()
 
+# draw the figure for the out of sample performance with fixed N and different alpha
 def outSample():
     name = 'm-chi'
     N = 10
@@ -67,6 +69,7 @@ def outSample():
     plt.savefig('sum_' + name + '_alpha_' + str(N) + '.png')
     plt.show()
 
+# draw the figure of reliability for different alpha with fixed N
 def rel():
     name = 'm-chi'
     type = "sum"

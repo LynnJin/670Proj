@@ -1,5 +1,6 @@
 from gurobipy import *
 
+# the robust model
 def robustModel(c, v, s, l, Q, budget, demand, rho, objType, phiType):
     numDemand = Q.shape[0]
     numItem = Q.shape[1]
@@ -83,10 +84,11 @@ def robustModel(c, v, s, l, Q, budget, demand, rho, objType, phiType):
                 m.addConstr(con2 == 0.5*(y[i, j] + lam[j] - 0.5*con))
                 m.addQConstr(lam[j]*lam[j] + con1*con1 <= con2*con2, name="soc_"+str(i)+str(j))
 
-    #m.setParam(GRB.Param.NonConvex, 2)
+    # don't show log in console
     m.params.logtoconsole = 0
     return m
 
+# the deterministic model
 def detModel(c, v, s, l, Q, budget, demand, objType):
     numDemand = Q.shape[0]
     numItem = Q.shape[1]
@@ -139,5 +141,6 @@ def detModel(c, v, s, l, Q, budget, demand, objType):
         m.addConstr(c[j]*q[j] - quicksum(Q[i, j]*f[i, j] for i in range(numDemand))
                     <= -z[j], name="robustified_"+str(j))
 
+    # don't show log in console
     m.params.logtoconsole = 0
     return m
