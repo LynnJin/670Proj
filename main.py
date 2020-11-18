@@ -79,7 +79,6 @@ def outSample():
     # generate rho for the robust optimization problem
     for alpha in alphaTest:
         # calculate rho
-        rhoa = [data.rhoa(alpha, numDemand, phiType, N)] * numItem
         rhoc = []
         for j in range(numItem):
             rhoc.append(data.rhoc(alpha, numDemand, phiType, N, Q[:, j]))
