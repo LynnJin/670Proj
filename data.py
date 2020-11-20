@@ -2,10 +2,14 @@ import pandas as pd
 import numpy as np
 from scipy.stats import chi2
 
-# read data from file
+
 def read(fileName):
+    """ Read the model parameter from data file
+
+    :param fileName: name of the data file
+    :return: model parameters
+    """
     allData = pd.read_csv(fileName)
-    #print(allData)
     c = np.array(allData["c"])
     v = np.array(allData["v"])
     s = np.array(allData["s"])
@@ -16,18 +20,35 @@ def read(fileName):
     Q = np.concatenate(([q1], [q2], [q3]), axis=0)
     return c, v, s, l, Q
 
-# calculate the approximated rho
+
 def rhoa(alpha, M, type, N):
+    """ calculate the approximated rho
+
+    :param alpha: confidence region
+    :param M: number of scenarios
+    :param type: type pf phi-divergence
+    :param N: number of samples
+    :return: approximated upper bound of the phi-divergence
+    """
     phi_grad = {"chi": 2, "m-chi": 2, "hel": 0.5, "cre": 1}
     grad = phi_grad.get(type)
 
     chi2_p = chi2.ppf(1 - alpha, M - 1)
-    rho = chi2_p*grad/(2*N)
+    rho = chi2_p * grad / (2 * N)
 
     return rho
 
-# calculate the corrected rho
+
 def rhoc(alpha, M, type, N, p):
+    """ calculate the corrected rho
+
+    :param alpha: confidence region
+    :param M: number of scenarios
+    :param type: type pf phi-divergence
+    :param N: number of samples
+    :param p: empirical distribution
+    :return: corrected upper bound of the phi-divergence
+    """
     # second - forth derivative of different types of divergence
     phi_grad = {'chi':[2, -6, 24], 'm-chi': [2, 0, 0], 'hel': [0.5, -0.75, 1.875], 'cre': [1, -1.5, 3.75]}
     for item in p:
@@ -53,8 +74,15 @@ def rhoc(alpha, M, type, N, p):
 
     return rho
 
-# sample probability for testing
+
 def sampleProb(Q, rho, M):
+    """ sample true distribution for testing
+
+    :param Q: 3*12 array, empirical distribution
+    :param rho: 1*12 list, upper bound for each item
+    :param M: number of scenarios
+    :return: 3*12 array sampled true distribution
+    """
     prob = np.ones((Q.shape[0], Q.shape[1]))
     for j in range(Q.shape[1]):
         while sum(prob[0:Q.shape[0]-1, j]) > 1:
@@ -62,14 +90,23 @@ def sampleProb(Q, rho, M):
                 # use the method in paper, take 95% confidence
                 delta = min(0.5*Q[i, j], 0.5*np.sqrt(rho[j]*Q[i, j]/M))
                 prob[i][j] = np.random.normal(Q[i, j], delta)
+                while prob[i][j] <= 0:
+                    prob[i][j] = np.random.normal(Q[i, j], delta)
         prob[Q.shape[0]-1, j] = 1 - sum(prob[0:Q.shape[0]-1, j])
 
     return prob
 
-# sample data based on the true distribution, treat the sample data as training sample
+
 def sampleData(Q, N):
+    """ sample empirical distribution for training
+
+    :param Q: 3*12 array true distribution
+    :param N: number of training sample
+    :return: 3*12 array sampled empirical distribution
+    """
     numItem = Q.shape[1]
     numDemand = Q.shape[0]
+    # sample data based on the true distribution
     probSim = np.zeros((numDemand, numItem))
     for n in range(N):
         s = np.random.uniform(0, 1, numItem)
@@ -80,6 +117,7 @@ def sampleData(Q, N):
                 probSim[1][j] += 1
             else:
                 probSim[2][j] += 1
+    # calculate the empirical distribution
     probSim = np.array([[round(probSim[j][i]/N, 4) for i in range(numItem)] for j in range(numDemand)])
 
     # make sure the total probability is 1
@@ -91,12 +129,17 @@ def sampleData(Q, N):
 
     return probSim
 
-# generate the list of alpha for testing, increase by 2% when alpha <= 0.1, 10% otherwise
-def alphaSet(alpha, piece = 5):
+
+def alphaSet(alpha):
+    """ generate the list of alpha for testing, increase by 10% when alpha <= 0.1, 1% otherwise
+
+    :param alpha: break point of confidence level
+    :return: list of candidate alpha
+    """
     alphaTest = []
     for i in range(len(alpha)):
         if i != len(alpha) - 1:
-            diff = (alpha[i + 1] - alpha[i]) / 9.0*piece
+            diff = (alpha[i + 1] - alpha[i]) / 9.0
             alphaTest.extend(np.arange(alpha[i], alpha[i + 1], diff))
     alphaTest.extend(np.arange(0.1, 0.401, 0.01))
     alphaTest = np.round_(alphaTest, 6)

@@ -1,18 +1,33 @@
 from gurobipy import *
 
-# the robust model
+
 def robustModel(c, v, s, l, Q, budget, demand, rho, objType, phiType):
+    """ create a robust model
+
+    :param c: purchase cost
+    :param v: salvage value
+    :param s: selling price
+    :param l: cost of lost sale
+    :param Q: true distribution of demand scenarios
+    :param budget: order budget
+    :param demand: demand scenarios
+    :param objType: objective type - worst/sum
+    :param phiType: phi-divergence type - cre/chi/m-chi
+    :return: a robust model
+    """
     numDemand = Q.shape[0]
     numItem = Q.shape[1]
 
     # create the model
     m = Model("newsVendor")
+    # don't show log in console
+    m.params.logtoconsole = 0
 
     # creat decision variables
     # primal decision variables
     q = m.addVars(numItem, vtype=GRB.CONTINUOUS, name="Q")
     z = m.addVars(numItem, vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="z")
-    # artifical decision variables
+    # artificial decision variables
     f = m.addVars(numDemand, numItem, vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="f")
 
     # dual decision variables
@@ -38,23 +53,34 @@ def robustModel(c, v, s, l, Q, budget, demand, rho, objType, phiType):
         quicksum(c[j] * q[j] for j in range(numItem)) <= budget, name="budget")
     for j in range(numItem):
         # constraint in original objective function
-        m.addConstrs((-f[i, j] >= -s[j] * q[j] + demand[i] * (s[j] - v[j]) for i in range(numDemand)),
-                     name="unsoldCstr_" + str(j))
-        m.addConstrs((-f[i, j] >= l[j] * demand[i] - (v[j] + l[j]) * q[j] for i in range(numDemand)),
-                     name="lostCstr_" + str(j))
+        m.addConstrs(
+            (-f[i, j] >= -s[j] * q[j] + demand[i] * (s[j] - v[j]) for i in range(numDemand)),
+            name="unsoldCstr_" + str(j))
+        m.addConstrs(
+            (-f[i, j] >= l[j] * demand[i] - (v[j] + l[j]) * q[j] for i in range(numDemand)),
+            name="lostCstr_" + str(j))
 
         # robustified constraint
         if phiType == "chi":
-            m.addConstr(c[j]*q[j] + eta[j] + rho[j]*lam[j] + 2*lam[j]
-                        - 2*quicksum(y[i, j] * Q[i][j] for i in range(numDemand)) <= -z[j], name="robustified_"+str(j))
+            m.addConstr(
+                c[j]*q[j] + eta[j] + rho[j]*lam[j] + 2*lam[j]
+                - 2*quicksum(y[i, j] * Q[i][j] for i in range(numDemand)) <= -z[j],
+                name="robustified_"+str(j))
         elif phiType == "hel":
-            m.addConstr(c[j] * q[j] + eta[j] + rho[j] * lam[j] - lam[j]
-                        + quicksum(y[i, j] * Q[i][j] for i in range(numDemand)) <= -z[j], name="robustified_"+str(j))
+            m.addConstr(
+                c[j] * q[j] + eta[j] + rho[j] * lam[j] - lam[j]
+                + quicksum(y[i, j] * Q[i][j] for i in range(numDemand)) <= -z[j],
+                name="robustified_"+str(j))
         elif phiType == "m-chi":
-            m.addConstr(c[j] * q[j] + eta[j] + rho[j] * lam[j] - lam[j]
-                        + 0.25*quicksum(y[i, j] * Q[i][j] for i in range(numDemand)) <= -z[j], name="robustified_"+str(j))
+            m.addConstr(
+                c[j] * q[j] + eta[j] + rho[j] * lam[j] - lam[j]
+                + 0.25*quicksum(y[i, j] * Q[i][j] for i in range(numDemand)) <= -z[j],
+                name="robustified_"+str(j))
         elif phiType == "cre":
-            m.addConstr(c[j] * q[j] + eta[j] + rho[j] * lam[j] - 2*lam[j] + 2*quicksum(y[i, j] * Q[i][j] for i in range(numDemand)) <= -z[j], name="robustified_"+str(j))
+            m.addConstr(
+                c[j] * q[j] + eta[j] + rho[j] * lam[j] - 2*lam[j]
+                + 2*quicksum(y[i, j] * Q[i][j] for i in range(numDemand)) <= -z[j],
+                name="robustified_"+str(j))
         else:
             raise Exception('Wrong phi type!')
 
@@ -84,23 +110,35 @@ def robustModel(c, v, s, l, Q, budget, demand, rho, objType, phiType):
                 m.addConstr(con2 == 0.5*(y[i, j] + lam[j] - 0.5*con))
                 m.addQConstr(lam[j]*lam[j] + con1*con1 <= con2*con2, name="soc_"+str(i)+str(j))
 
-    # don't show log in console
-    m.params.logtoconsole = 0
     return m
 
-# the deterministic model
+
 def detModel(c, v, s, l, Q, budget, demand, objType):
+    """ create a deterministice model
+
+    :param c: purchase cost
+    :param v: salvage value
+    :param s: selling price
+    :param l: cost of lost sale
+    :param Q: true distribution of demand scenarios
+    :param budget: order budget
+    :param demand: demand scenarios
+    :param objType: objective type - worst/sum
+    :return: a deterministic model
+    """
     numDemand = Q.shape[0]
     numItem = Q.shape[1]
 
     # create the model
     m = Model("newsVendor")
+    # don't show log in console
+    m.params.logtoconsole = 0
 
     # creat decision variables
     # primal decision variables
     q = m.addVars(numItem, vtype=GRB.CONTINUOUS, name="Q")
     z = m.addVars(numItem, vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="z")
-    # artifical decision variables
+    # artificial decision variables
     f = m.addVars(numDemand, numItem, vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="f")
 
     # set objective function
@@ -119,28 +157,15 @@ def detModel(c, v, s, l, Q, budget, demand, objType):
         quicksum(c[j] * q[j] for j in range(numItem)) <= budget, name="budget")
     for j in range(numItem):
         # constraint in original objective function
-        '''
-        for i in range(numDemand):
-            a = m.addVar(vtype=GRB.CONTINUOUS, name="a")
-            m.addGenConstrMin(a, [q[j]], demand[i])
-            b = m.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="b")
-            m.addConstr(b == q[j] - demand[i])
-            d = m.addVar(vtype=GRB.CONTINUOUS, name="d")
-            m.addGenConstrMax(d, [b], 0.0)
-            e = m.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="e")
-            m.addConstr(e == demand[i] - q[j])
-            g = m.addVar(vtype=GRB.CONTINUOUS, name="g")
-            m.addGenConstrMax(g, [e], 0.0)
-            m.addConstr(f[i, j] == v[j] * a + s[j] * d - l[j] * g)
-        '''
-        m.addConstrs((-f[i, j] >= -s[j]*q[j] + demand[i]*(s[j] - v[j]) for i in range(numDemand)),
-                     name="unsoldCstr_"+str(j))
-        m.addConstrs((-f[i, j] >= l[j]*demand[i] - (v[j] + l[j])*q[j] for i in range(numDemand)),
-                     name="lostCstr_"+str(j))
+        m.addConstrs(
+            (-f[i, j] >= -s[j]*q[j] + demand[i]*(s[j] - v[j]) for i in range(numDemand)),
+            name="unsoldCstr_"+str(j))
+        m.addConstrs(
+            (-f[i, j] >= l[j]*demand[i] - (v[j] + l[j])*q[j] for i in range(numDemand)),
+            name="lostCstr_"+str(j))
 
-        m.addConstr(c[j]*q[j] - quicksum(Q[i, j]*f[i, j] for i in range(numDemand))
-                    <= -z[j], name="robustified_"+str(j))
+        m.addConstr(
+            c[j]*q[j] - quicksum(Q[i, j]*f[i, j] for i in range(numDemand)) <= -z[j],
+            name="robustified_"+str(j))
 
-    # don't show log in console
-    m.params.logtoconsole = 0
     return m

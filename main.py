@@ -1,10 +1,17 @@
 import data
 import model
 import evaluate
+import figure
 import numpy as np
 
-# reproduce the results in the paper
-def sanityCheck():
+
+def sanityCheck(phiType, objType):
+    """ reproduce the results in the paper, solve optimization model on empirical distribution,
+    test on samples true distribution centered at the empirical distribution
+
+    :param phiType: phi-divergence type - cre/chi/m-chi
+    :param objType: objective type - worst/sum
+    """
     # set parameter
     c, v, s, l, Q = data.read("data.csv")
     budget = 1000
@@ -16,9 +23,6 @@ def sanityCheck():
     alpha = 0.05
     numDemand = Q.shape[0]
     numItem = Q.shape[1]
-    # decide the type of problem and objective
-    phiType = "cre"
-    objType = "sum"
 
     # return for different N
     detReturns = []
@@ -31,74 +35,75 @@ def sanityCheck():
 
         # evaluate the returns
         modelType = "robust"
-        minReturn, maxReturn, meanReturn, solution = evaluate.stat(c, v, s, l, Q, budget, demand, modelType, objType, phiType, it,
-                                                         rhoc, rhoc)
-        robustReturns.append([minReturn, maxReturn, meanReturn, solution])
+        minReturn, maxReturn, meanReturn = \
+            evaluate.stat(c, v, s, l, Q, budget, demand, modelType, objType, phiType, it, rhoc)
+        robustReturns.append([minReturn, maxReturn, meanReturn])
         modelType = "det"
-        minReturn, maxReturn, meanReturn, solution = evaluate.stat(c, v, s, l, Q, budget, demand, modelType, objType, phiType, it,
-                                                         rhoc, rhoc)
-        detReturns.append([minReturn, maxReturn, meanReturn, solution])
+        minReturn, maxReturn, meanReturn = evaluate.stat(c, v, s, l, Q, budget, demand, modelType, objType, phiType, it,
+                                                         rhoc)
+        detReturns.append([minReturn, maxReturn, meanReturn])
 
         # print the process
         if N % 50 == 0 and N >= 50:
             print(str(N / 10) + " of " + str(N_max / 10 - 1) + " experiments done")
 
     # save the data
-    np.savez_compressed(objType + '_' + phiType + '_' + 'check3.npz', robust=robustReturns, det=detReturns)
+    np.savez_compressed('/data/' + objType + '_' + phiType + '_' + 'check3.npz', robust=robustReturns, det=detReturns)
 
-# test the out sample performance for different alpha with small N
-def outSample():
+    figure.sanityCheck(objType, phiType)
+
+
+def outSample(phiType, objType, N):
+    """ sample empirical distribution, solve optimization model,
+    test the out of sample performance on true distribution for different alpha with small N
+
+    :param phiType: phi-divergence type - cre/chi/m-chi
+    :param objType: objective type - worst/sum
+    :param N: number of training sample
+    """
     # set parameter
     c, v, s, l, trueProb = data.read("data.csv")
     budget = 1000
     demand = [4, 8, 10]
-    N = 10
-    Q = data.sampleData(trueProb, N)
+
     # get the alpha to be tested
     alpha=[0.0001, 0.001, 0.01, 0.1]
     alphaTest = data.alphaSet(alpha)
 
     # number of iterations
-    it = 1000
-    numDemand = Q.shape[0]
-    numItem = Q.shape[1]
-
-    # set the types of problem and divergence
-    phiType = "m-chi"
-    objType = "sum"
+    it = 100
+    numDemand = trueProb.shape[0]
+    numItem = trueProb.shape[1]
 
     # return for different alpha
     robustReturns = []
     n = 0
 
-    # generate the rho for testing
-    rhoTest = []
-    for j in range(numItem):
-        rhoTest.append(data.rhoc(0.05, numDemand, phiType, N, Q[:, j]))
-
     # generate rho for the robust optimization problem
     for alpha in alphaTest:
-        # calculate rho
-        rhoc = []
-        for j in range(numItem):
-            rhoc.append(data.rhoc(alpha, numDemand, phiType, N, Q[:, j]))
-
         # evaluate the returns
         modelType = "robust"
-        minReturn, maxReturn, meanReturn, solution, time = evaluate.stat(c, v, s, l, Q, budget, demand, modelType, objType, phiType, it,
-                                                         rhoc, rhoTest, trueProb)
-        robustReturns.append([minReturn, maxReturn, meanReturn, solution, time])
+        minReturn, maxReturn, meanReturn, time = evaluate.statOut(
+            c, v, s, l, budget, demand, modelType,objType, phiType, alpha, it, N, trueProb)
+        robustReturns.append([minReturn, maxReturn, meanReturn, time])
 
         # print the process
         n = n + 1
         if n % 10 == 0 and n >= 10:
-            print(str(n) + " of " + str(167) + " experiments done")
+            print(str(n) + " of " + str(60) + " experiments done")
 
     # save the data
-    np.savez_compressed(objType + '_' + phiType + '_alpha_' + str(N)+'.npz', robust=robustReturns)
+    np.savez_compressed('/data/' + objType + '_' + phiType + '_alpha_' + str(N)+'.npz', robust=robustReturns)
 
-# use cross validation to select the best alpha when N is small
-def crossValidation():
+    figure.outSample(objType, phiType, N)
+
+
+def crossValidation(phiType, objType):
+    """ use cross validation to select the best alpha when N is small
+
+    :param phiType: phi-divergence type - cre/chi/m-chi
+    :param objType: objective type - worst/sum
+    """
     # set parameter
     c, v, s, l, trueProb = data.read("data.csv")
     budget = 1000
@@ -108,17 +113,10 @@ def crossValidation():
 
     # get the set of candidates of alpha
     alpha = [0.001, 0.01, 0.1]
-    alphaTest = data.alphaSet(alpha, 1)
+    alphaTest = data.alphaSet(alpha)
 
     numDemand = trueProb.shape[0]
     numItem = trueProb.shape[1]
-
-    # set the types of problem and divergence
-    phiType = "chi"
-    objType = "worst"
-
-    # the largest alpha to guarantee the reliability greater than 90%
-    relLimits = [0.05, 0.1, 0.2, 0.4]
 
     # use 2 - fold because the limited data we have
     K = 2
@@ -167,8 +165,6 @@ def crossValidation():
         # lower bound the alpha by 0.05 and upper bound the alpha considering the reliability
         if alphaTest[bestAlpha] <= 0.05:
             bestAlphas.append(0.05)
-        elif alphaTest[bestAlpha] >= relLimits[int(N/10 - 1)]:
-            bestAlphas.append(relLimits[int(N/10 - 1)])
         else:
             bestAlphas.append(alphaTest[bestAlpha])
 
@@ -176,10 +172,15 @@ def crossValidation():
         print(str(N) + " experiments done")
 
     # save the results
-    np.savez_compressed(objType + '_' + phiType + '_bestAlpha.npz', alpha=bestAlphas)
+    np.savez_compressed('/data/' + objType + '_' + phiType + '_bestAlpha.npz', alpha=bestAlphas)
 
-# test the out of sample performance varying N with its best alpha
-def afterCV():
+
+def afterCV(phiType, objType):
+    """ test the out of sample performance on different N with its best alpha
+
+    :param phiType: phi-divergence type - cre/chi/m-chi
+    :param objType: objective type - worst/sum
+    """
     # set parameter
     c, v, s, l, trueProb = data.read("data.csv")
     budget = 1000
@@ -187,11 +188,9 @@ def afterCV():
     N_max = 1010
 
     # number of tests
-    it = 5000
+    it = 100
     numDemand = trueProb.shape[0]
     numItem = trueProb.shape[1]
-    phiType = "m-chi"
-    objType = "worst"
 
     # load the best alpha for small N
     loaded = np.load(objType + '_' + phiType + '_bestAlpha.npz', allow_pickle=True)
@@ -214,32 +213,59 @@ def afterCV():
         for j in range(numItem):
             rhoc.append(data.rhoc(alpha, numDemand, phiType, N, Q[:, j]))
 
-        # calculate the rho for generating the test distributions
-        rhoTest = []
-        for j in range(numItem):
-            rhoTest.append(data.rhoc(0.05, numDemand, phiType, N, Q[:, j]))
-
         # evaluate the returns
         modelType = "robust"
-        minReturn, maxReturn, meanReturn, solution, time = evaluate.stat(c, v, s, l, Q, budget, demand, modelType, objType, phiType, it,
-                                                         rhoc, rhoTest, trueProb)
-        robustReturns.append([minReturn, maxReturn, meanReturn, solution, time])
+        minReturn, maxReturn, meanReturn, time = evaluate.statOut(
+            c, v, s, l, budget, demand, modelType, objType, phiType, alpha, it, N, trueProb)
 
+        robustReturns.append([minReturn, maxReturn, meanReturn])
 
         modelType = "det"
-        minReturn, maxReturn, meanReturn, solution, time = evaluate.stat(c, v, s, l, Q, budget, demand, modelType, objType, phiType, it,
-                                                          rhoc, rhoTest, trueProb)
-        SAAReturns.append([minReturn, maxReturn, meanReturn, solution, time])
+        minReturn, maxReturn, meanReturn, time = evaluate.statOut(
+            c, v, s, l, budget, demand, modelType, objType, phiType, alpha, it, N, trueProb)
 
+        SAAReturns.append([minReturn, maxReturn, meanReturn])
 
         # print the process
         if N % 50 == 0 and N >= 50:
             print(str(N / 10) + " of " + str(N_max / 10 - 1) + " experiments done")
 
     # save the data
-    np.savez_compressed(objType + '_' + phiType + '_final.npz', robust=robustReturns, SAA=SAAReturns)
+    np.savez_compressed('/data/' + objType + '_' + phiType + '_final.npz', robust=robustReturns, SAA=SAAReturns)
+
+    figure.sanityCheck(objType, phiType)
+
+
+def main(task):
+    """ main function for executing the tasks
+
+    :param task: name of the task
+    """
+    phiList = ["cre", "chi", "m-chi"]
+    objList = ["sum", "worst"]
+
+    if task == "sanity":
+        for obiType in objList:
+            sanityCheck("cre", obiType)
+    elif task == "outSample":
+        for phiType in phiList:
+            for obiType in objList:
+                for N in [10, 30, 50 ,100]:
+                    outSample(phiType, obiType, N)
+    elif task == "CV":
+        for phiType in phiList:
+            for obiType in objList:
+                crossValidation(phiType, obiType)
+    elif task == "final":
+        for phiType in phiList:
+            for obiType in objList:
+                afterCV(phiType, obiType)
+    else:
+        raise Exception("Wrong task!")
+
 
 if __name__ == "__main__":
-    afterCV()
+    taskList = ["sanity", "outSample", "CV", "final"]
+    main(taskList[0])
 
 
