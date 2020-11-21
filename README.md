@@ -9,7 +9,7 @@ I assume there is a true distribution. I sample N data from that distribution to
 * **Influences of Confidence Level**\
 For the problem with small sample data size, I test how the out of sample performance and the reliability change with the confidence level \alpha. I treat the mean return of several sample distributions as the indicator of the out of sample performance. The ratio that the return with sample distribution and robust solution is lower than the robust problem's objective value represents the reliability.
 * **Cross Validation**\
- I use 2-fold method to select the confidence level when the sample size is small(less than 50). Because the size of the data size is small, the 5-fold method doesn't work well. I try to find the confidence level, which will keep the reliability greater than 90% while maximizing the mean return.
+ I use 2-fold method to select the confidence level when the sample size is small(less than 50). Because the size of the data size is small, the 5-fold method doesn't work well.
 ## Code structure
 I have five python files in the project.
 * [data.py](https://github.com/LynnJin/670Proj/blob/main/data.py)\

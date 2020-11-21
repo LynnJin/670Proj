@@ -13,7 +13,7 @@ def sanityCheck(phiType, objType):
     :param objType: objective type - worst/sum
     """
     # set parameter
-    c, v, s, l, Q = data.read("data.csv")
+    c, v, s, l, Q = data.read("data/data.csv")
     budget = 1000
     demand = [4, 8, 10]
     N_max = 1010
@@ -48,7 +48,7 @@ def sanityCheck(phiType, objType):
             print(str(N / 10) + " of " + str(N_max / 10 - 1) + " experiments done")
 
     # save the data
-    np.savez_compressed('/data/' + objType + '_' + phiType + '_' + 'check3.npz', robust=robustReturns, det=detReturns)
+    np.savez_compressed('data/' + objType + '_' + phiType + '_' + 'check3.npz', robust=robustReturns, det=detReturns)
 
     figure.sanityCheck(objType, phiType)
 
@@ -62,7 +62,7 @@ def outSample(phiType, objType, N):
     :param N: number of training sample
     """
     # set parameter
-    c, v, s, l, trueProb = data.read("data.csv")
+    c, v, s, l, trueProb = data.read("data/data.csv")
     budget = 1000
     demand = [4, 8, 10]
 
@@ -93,7 +93,7 @@ def outSample(phiType, objType, N):
             print(str(n) + " of " + str(60) + " experiments done")
 
     # save the data
-    np.savez_compressed('/data/' + objType + '_' + phiType + '_alpha_' + str(N)+'.npz', robust=robustReturns)
+    np.savez_compressed('data/' + objType + '_' + phiType + '_alpha_' + str(N)+'.npz', robust=robustReturns)
 
     figure.outSample(objType, phiType, N)
 
@@ -105,7 +105,7 @@ def crossValidation(phiType, objType):
     :param objType: objective type - worst/sum
     """
     # set parameter
-    c, v, s, l, trueProb = data.read("data.csv")
+    c, v, s, l, trueProb = data.read("data/data.csv")
     budget = 1000
     demand = [4, 8, 10]
     # max of N
@@ -120,11 +120,11 @@ def crossValidation(phiType, objType):
 
     # use 2 - fold because the limited data we have
     K = 2
-    bestAlphas = []
+    bestAlphas = [0.0]*int((N_max - 10)/10)
     # iterate for all N to be tested
     for N in range(10, N_max, 10):
         # calculate the number of data points for each set
-        length = int(N / K)
+        length = int(2*N / K)
         # store the distribution of each set
         allProb = []
         for k in range(K):
@@ -151,28 +151,22 @@ def crossValidation(phiType, objType):
                 order = [m.getVarByName("Q[" + str(j) + "]").getAttr("x") for j in range(numItem)]
                 # get the value of the solution using the test data
                 simObj = evaluate.objVal(c, v, s, l, testProb, order, demand, objType)
-                results[i] += simObj
+                results[i] = simObj
 
-        # calculate the average results
-        results = results/K
-
-        # select the best alpha by the mean
-        bestAlpha = 0
-        for i in range(len(alphaTest)-1):
-            if (results[i+1]-results[bestAlpha])/results[bestAlpha] >= 0.005:
-                bestAlpha = i+1
-
-        # lower bound the alpha by 0.05 and upper bound the alpha considering the reliability
-        if alphaTest[bestAlpha] <= 0.05:
-            bestAlphas.append(0.05)
-        else:
-            bestAlphas.append(alphaTest[bestAlpha])
+            # select the best alpha
+            bestAlpha = 0
+            for i in range(len(alphaTest) - 1):
+                if (results[i + 1] - results[bestAlpha]) / results[bestAlpha] >= 0.005:
+                    bestAlpha = i + 1
+            bestAlphas[int(N/10 - 1)] += alphaTest[bestAlpha]
 
         # print the process
         print(str(N) + " experiments done")
 
+    # calculate the average results
+    alphaOut = [max(0.05, alpha / 2) for alpha in bestAlphas]
     # save the results
-    np.savez_compressed('/data/' + objType + '_' + phiType + '_bestAlpha.npz', alpha=bestAlphas)
+    np.savez_compressed('data/' + objType + '_' + phiType + '_bestAlpha.npz', alpha=alphaOut)
 
 
 def afterCV(phiType, objType):
@@ -182,7 +176,7 @@ def afterCV(phiType, objType):
     :param objType: objective type - worst/sum
     """
     # set parameter
-    c, v, s, l, trueProb = data.read("data.csv")
+    c, v, s, l, trueProb = data.read("data/data.csv")
     budget = 1000
     demand = [4, 8, 10]
     N_max = 1010
@@ -193,7 +187,7 @@ def afterCV(phiType, objType):
     numItem = trueProb.shape[1]
 
     # load the best alpha for small N
-    loaded = np.load(objType + '_' + phiType + '_bestAlpha.npz', allow_pickle=True)
+    loaded = np.load('data/' + objType + '_' + phiType + '_bestAlpha.npz', allow_pickle=True)
     bestAlphas = loaded['alpha']
 
     # return for different N
@@ -231,7 +225,7 @@ def afterCV(phiType, objType):
             print(str(N / 10) + " of " + str(N_max / 10 - 1) + " experiments done")
 
     # save the data
-    np.savez_compressed('/data/' + objType + '_' + phiType + '_final.npz', robust=robustReturns, SAA=SAAReturns)
+    np.savez_compressed('data/' + objType + '_' + phiType + '_final.npz', robust=robustReturns, SAA=SAAReturns)
 
     figure.sanityCheck(objType, phiType)
 
@@ -266,6 +260,6 @@ def main(task):
 
 if __name__ == "__main__":
     taskList = ["sanity", "outSample", "CV", "final"]
-    main(taskList[0])
+    main(taskList[2])
 
 

@@ -9,7 +9,7 @@ def sanityCheck(objType, phiType):
     :param objType: objective type - worst/sum
     :param phiType: phi-divergence type - cre/chi/m-chi
     """
-    loaded = np.load(objType + '_' + phiType + '_final.npz')
+    loaded = np.load('data/' + objType + '_' + phiType + '_final.npz')
     robustReturns = loaded['robust']
     detReturns = loaded['SAA']
 
@@ -38,7 +38,7 @@ def sanityCheck(objType, phiType):
         raise Exception("Wrong model type")
     plt.ylabel('Return')
 
-    plt.savefig('/data/' + objType + '_' + phiType + '_final.png')
+    plt.savefig('data/' + objType + '_' + phiType + '_final.png')
     plt.show()
 
 
@@ -48,7 +48,7 @@ def outSample(objType, phiType, N):
     :param objType: objective type - worst/sum
     :param phiType: phi-divergence type - cre/chi/m-chi
     """
-    loaded = np.load(objType + '_' + phiType + '_alpha_' + str(N) + '.npz')
+    loaded = np.load('data/' + objType + '_' + phiType + '_alpha_' + str(N) + '.npz')
     robustReturns = loaded['robust']
 
     robArray = np.transpose(np.array(robustReturns))
@@ -87,5 +87,5 @@ def outSample(objType, phiType, N):
     ax1.legend(loc="lower right", prop={'size': 12})
     plt.title("N = " + str(N))
 
-    plt.savefig('/data/' + objType + '_' + phiType + '_alpha_' + str(N) + '.png')
+    plt.savefig('data/' + objType + '_' + phiType + '_alpha_' + str(N) + '.png')
     plt.show()
